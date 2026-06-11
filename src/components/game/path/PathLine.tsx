@@ -5,7 +5,8 @@ import { getPathColor } from './colorUtils';
 export interface PathLineProps {
   from: Position;
   to: Position;
-  colorIndex: number;
+  fromColorIndex: number;
+  toColorIndex: number;
   totalColors: number;
   cellSize: number;
   lineWidth?: number;
@@ -14,15 +15,16 @@ export interface PathLineProps {
 export const PathLine: React.FC<PathLineProps> = ({
   from,
   to,
-  colorIndex,
+  fromColorIndex,
+  toColorIndex,
   totalColors,
   cellSize,
   lineWidth = 5,
 }) => {
   const isHorizontal = from.y === to.y;
 
-  const fromColor = getPathColor(colorIndex - 1, totalColors, 'light');
-  const toColor = getPathColor(colorIndex, totalColors, 'main');
+  const fromColor = getPathColor(fromColorIndex, totalColors, 'light');
+  const toColor = getPathColor(toColorIndex, totalColors, 'main');
 
   const startX = from.x * cellSize + cellSize / 2;
   const startY = from.y * cellSize + cellSize / 2;
@@ -56,7 +58,7 @@ export const PathLine: React.FC<PathLineProps> = ({
         height,
         borderRadius: lineWidth / 2,
         background: `linear-gradient(${gradientDirection}, ${fromColor} 0%, ${toColor} 100%)`,
-        opacity: 0.75,
+        opacity: 0.8,
         boxShadow: `0 0 6px ${toColor}80`,
       }}
     />

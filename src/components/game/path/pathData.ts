@@ -15,7 +15,8 @@ export interface PathLineData {
   key: string;
   from: Position;
   to: Position;
-  colorIndex: number;
+  fromColorIndex: number;
+  toColorIndex: number;
 }
 
 export interface PathVisualizationData {
@@ -46,14 +47,17 @@ export function buildPathVisualizationData(
     { colorIndex: number; displayStep: number; visitCount: number }
   >();
 
-  let currentColorIndex = 0;
-  let lastPosKey = posKey(firstPoint.position.x, firstPoint.position.y);
+  const posFirstColorIndex = new Map<string, number>();
 
-  visitInfo.set(lastPosKey, {
+  let currentColorIndex = 0;
+
+  const firstKey = posKey(firstPoint.position.x, firstPoint.position.y);
+  visitInfo.set(firstKey, {
     colorIndex: 0,
     displayStep: firstPoint.step,
     visitCount: 1,
   });
+  posFirstColorIndex.set(firstKey, 0);
 
   for (let i = 1; i < pathHistory.length; i++) {
     const point = pathHistory[i];
@@ -66,16 +70,20 @@ export function buildPathVisualizationData(
     if (positionChanged) {
       currentColorIndex++;
 
+      const toColorIndex = posFirstColorIndex.has(key)
+        ? posFirstColorIndex.get(key)!
+        : currentColorIndex;
+
       lines.push({
         key: `line-${lines.length}`,
         from: { ...prevPoint.position },
         to: { ...point.position },
-        colorIndex: currentColorIndex,
+        fromColorIndex: currentColorIndex - 1,
+        toColorIndex,
       });
 
       const existing = visitInfo.get(key);
       if (existing) {
-        existing.colorIndex = currentColorIndex;
         existing.displayStep = point.step;
         existing.visitCount++;
       } else {
@@ -84,6 +92,7 @@ export function buildPathVisualizationData(
           displayStep: point.step,
           visitCount: 1,
         });
+        posFirstColorIndex.set(key, currentColorIndex);
       }
     } else {
       const existing = visitInfo.get(key);
@@ -91,14 +100,12 @@ export function buildPathVisualizationData(
         existing.displayStep = point.step;
       }
     }
-
-    lastPosKey = key;
   }
 
   const totalColors = currentColorIndex + 1;
 
   const lastKey = posKey(lastPoint.position.x, lastPoint.position.y);
-  const startKey = posKey(firstPoint.position.x, firstPoint.position.y);
+  const startKey = firstKey;
 
   visitInfo.forEach((info, key) => {
     const [x, y] = key.split(',').map(Number);

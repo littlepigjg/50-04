@@ -39,7 +39,8 @@ export const PathVisualization: React.FC<PathVisualizationProps> = ({
           key={line.key}
           from={line.from}
           to={line.to}
-          colorIndex={line.colorIndex}
+          fromColorIndex={line.fromColorIndex}
+          toColorIndex={line.toColorIndex}
           totalColors={vizData.totalColors}
           cellSize={cellSize}
         />
