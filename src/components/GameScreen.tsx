@@ -9,6 +9,7 @@ import { updateLevelProgress } from '../engine/storage';
 import { BlockPalette } from './blocks/BlockPalette';
 import { ProgramArea } from './blocks/ProgramArea';
 import { GameGrid } from './game/GameGrid';
+import { DebugSidebar } from './debug/DebugSidebar';
 import { shareLevel, downloadLevel } from '../engine/storage';
 
 interface GameScreenProps {
@@ -104,6 +105,8 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const [showResult, setShowResult] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [speed, setSpeed] = useState(500);
+  const [showDebugSidebar, setShowDebugSidebar] = useState(false);
+  const [showPath, setShowPath] = useState(true);
   const animationRef = useRef<number | null>(null);
 
   const currentState = executionSteps[currentStepIndex]?.state || createInitialExecutionState(level);
@@ -206,7 +209,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const finalState = executionSteps.length > 0 ? executionSteps[executionSteps.length - 1].state : null;
 
   return (
-    <div className="min-h-screen py-4 px-4">
+    <div className={`min-h-screen py-4 px-4 transition-all duration-300 ${showDebugSidebar ? 'pr-[340px]' : ''}`}>
       <div className="max-w-7xl mx-auto">
         <div className="game-card p-4 mb-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -251,6 +254,22 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               >
                 💡 提示
               </button>
+
+              <button
+                onClick={() => setShowDebugSidebar(!showDebugSidebar)}
+                className={`btn-secondary !py-2 !px-4 flex items-center gap-2 ${showDebugSidebar ? '!bg-indigo-100 !text-indigo-700' : ''}`}
+              >
+                🔍 调试
+              </button>
+
+              {showDebugSidebar && (
+                <button
+                  onClick={() => setShowPath(!showPath)}
+                  className={`btn-secondary !py-2 !px-4 ${showPath ? '!bg-green-100 !text-green-700' : ''}`}
+                >
+                  🛤️ 路径
+                </button>
+              )}
 
               {isCustom && (
                 <>
@@ -309,6 +328,8 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                   collectedStars={currentState.collectedStars}
                   cellSize={cellSize}
                   isAnimating={isRunning}
+                  pathHistory={currentState.debugInfo?.pathHistory || []}
+                  showPath={showPath && showDebugSidebar}
                 />
               </div>
 
@@ -365,6 +386,17 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           onBack={onBack}
         />
       )}
+
+      <DebugSidebar
+        debugInfo={currentState.debugInfo}
+        robotState={currentState.robot}
+        currentStep={currentState.currentStep}
+        totalSteps={currentState.totalSteps}
+        collectedStars={currentState.collectedStars}
+        totalStars={level.stars.length}
+        isVisible={showDebugSidebar}
+        onClose={() => setShowDebugSidebar(false)}
+      />
     </div>
   );
 };

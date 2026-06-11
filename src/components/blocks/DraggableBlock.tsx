@@ -8,7 +8,7 @@ import { updateBlock } from '../../engine/blockUtils';
 
 interface DraggableBlockProps {
   block: ProgramBlock;
-  isHighlighted?: boolean;
+  highlightedBlockId?: string;
   onDelete?: (id: string) => void;
   onUpdate?: (blocks: ProgramBlock[]) => void;
   allBlocks?: ProgramBlock[];
@@ -44,7 +44,7 @@ const BlockChildrenContainer: React.FC<{
 
 export const DraggableBlock: React.FC<DraggableBlockProps> = ({
   block,
-  isHighlighted,
+  highlightedBlockId,
   onDelete,
   onUpdate,
   allBlocks = [],
@@ -52,6 +52,18 @@ export const DraggableBlock: React.FC<DraggableBlockProps> = ({
 }) => {
   const config = BLOCK_CONFIGS[block.type];
   const [showRepeatInput, setShowRepeatInput] = useState(false);
+
+  const isHighlighted = highlightedBlockId === block.id;
+
+  const hasHighlightedDescendant = (b: ProgramBlock): boolean => {
+    if (!b.children) return false;
+    return b.children.some(
+      (child) =>
+      child.id === highlightedBlockId || hasHighlightedDescendant(child)
+    );
+  };
+
+  const isParentHighlighted = hasHighlightedDescendant(block);
 
   const {
     attributes,
@@ -90,6 +102,7 @@ export const DraggableBlock: React.FC<DraggableBlockProps> = ({
         relative ${config.color} block-shadow-sm text-white rounded-lg
         transition-all duration-200 my-1
         ${isHighlighted ? 'ring-4 ring-yellow-400 ring-offset-2 scale-105 z-10' : ''}
+        ${isParentHighlighted && !isHighlighted ? 'ring-2 ring-yellow-300 ring-offset-1 scale-[1.02]' : ''}
         ${isDragging ? 'rotate-2 scale-105' : ''}
       `}
     >
@@ -173,7 +186,7 @@ export const DraggableBlock: React.FC<DraggableBlockProps> = ({
                 <DraggableBlock
                   key={child.id}
                   block={child}
-                  isHighlighted={isHighlighted}
+                  highlightedBlockId={highlightedBlockId}
                   onDelete={onDelete}
                   onUpdate={onUpdate}
                   allBlocks={allBlocks}

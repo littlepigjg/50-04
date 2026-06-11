@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import type { CellType, Direction, Level, Position, RobotState } from '../../engine/types';
+import type { CellType, Direction, Level, Position, RobotState, PathPoint } from '../../engine/types';
 import { positionEquals } from '../../engine/GameEngine';
 
 interface GameGridProps {
@@ -8,6 +8,8 @@ interface GameGridProps {
   collectedStars: Position[];
   cellSize?: number;
   isAnimating?: boolean;
+  pathHistory?: PathPoint[];
+  showPath?: boolean;
 }
 
 const DIRECTION_ROTATION: Record<Direction, number> = {
@@ -129,11 +131,78 @@ const Start: React.FC = () => (
   </div>
 );
 
+const PathMarker: React.FC<{
+  step: number;
+  totalSteps: number;
+  isFirst?: boolean;
+  isLast?: boolean;
+}> = ({ step, totalSteps, isFirst, isLast }) => {
+  const hue = (step / Math.max(totalSteps, 1)) * 120;
+  const color = `hsl(${hue}, 70%, 50%)`;
+
+  return (
+    <div
+      className={`absolute inset-2 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md z-5 transition-all duration-300 ${
+        isLast ? 'scale-125 animate-pulse' : ''
+      }`}
+      style={{
+        backgroundColor: color,
+        opacity: isFirst ? 0.3 : 0.7,
+      }}
+    >
+      {step > 0 && <span className="drop-shadow">{step}</span>}
+    </div>
+  );
+};
+
+const PathLine: React.FC<{
+  from: Position;
+  to: Position;
+  step: number;
+  totalSteps: number;
+  cellSize: number;
+}> = ({ from, to, step, totalSteps, cellSize }) => {
+  const isHorizontal = from.y === to.y;
+  const hue = (step / Math.max(totalSteps, 1)) * 120;
+  const color = `hsl(${hue}, 70%, 60%)`;
+
+  const startX = from.x * cellSize + cellSize / 2;
+  const startY = from.y * cellSize + cellSize / 2;
+  const endX = to.x * cellSize + cellSize / 2;
+  const endY = to.y * cellSize + cellSize / 2;
+
+  const length = isHorizontal
+    ? Math.abs(endX - startX)
+    : Math.abs(endY - startY);
+
+  const left = isHorizontal ? Math.min(startX, endX) : startX - 2;
+  const top = isHorizontal ? startY - 2 : Math.min(startY, endY);
+  const width = isHorizontal ? length : 4;
+  const height = isHorizontal ? 4 : length;
+
+  return (
+    <div
+      className="absolute z-4 transition-all duration-300"
+      style={{
+        left,
+        top,
+        width,
+        height,
+        backgroundColor: color,
+        opacity: 0.6,
+        borderRadius: 2,
+      }}
+    />
+  );
+};
+
 export const GameGrid: React.FC<GameGridProps> = ({
   level,
   robotState,
   collectedStars,
   cellSize = 60,
+  pathHistory = [],
+  showPath = false,
 }) => {
   const { grid, width, height, start, goal, stars } = level;
 
@@ -158,6 +227,35 @@ export const GameGrid: React.FC<GameGridProps> = ({
     stars.forEach((p) => set.add(`${p.x},${p.y}`));
     return set;
   }, [stars]);
+
+  const pathPositions = useMemo(() => {
+    const map = new Map<string, { step: number; isLast: boolean; isFirst: boolean }>();
+    const total = pathHistory.length;
+    pathHistory.forEach((point, index) => {
+      const key = `${point.position.x},${point.position.y}`;
+      const existing = map.get(key);
+      if (!existing || point.step > existing.step) {
+        map.set(key, {
+          step: point.step,
+          isLast: index === total - 1,
+          isFirst: index === 0,
+        });
+      }
+    });
+    return map;
+  }, [pathHistory]);
+
+  const pathLines = useMemo(() => {
+    const lines: { from: Position; to: Position; step: number }[] = [];
+    for (let i = 0; i < pathHistory.length - 1; i++) {
+      const from = pathHistory[i].position;
+      const to = pathHistory[i + 1].position;
+      if (from.x !== to.x || from.y !== to.y) {
+        lines.push({ from, to, step: pathHistory[i + 1].step });
+      }
+    }
+    return lines;
+  }, [pathHistory]);
 
   return (
     <div
@@ -199,11 +297,32 @@ export const GameGrid: React.FC<GameGridProps> = ({
                 justCollected={false}
               />
             )}
+
+            {showPath && pathPositions.has(`${x},${y}`) && (
+              <PathMarker
+                step={pathPositions.get(`${x},${y}`)!.step}
+                totalSteps={pathHistory.length > 0 ? pathHistory[pathHistory.length - 1].step : 1}
+                isFirst={pathPositions.get(`${x},${y}`)!.isFirst}
+                isLast={pathPositions.get(`${x},${y}`)!.isLast}
+              />
+            )}
           </div>
         ))}
 
+        {showPath &&
+          pathLines.map((line, index) => (
+            <PathLine
+              key={`line-${index}`}
+              from={line.from}
+              to={line.to}
+              step={line.step}
+              totalSteps={pathHistory.length > 0 ? pathHistory[pathHistory.length - 1].step : 1}
+              cellSize={cellSize}
+            />
+          ))}
+
         <div
-          className="absolute transition-all duration-300 ease-in-out"
+          className="absolute transition-all duration-300 ease-in-out z-20"
           style={{
             left: robotState.position.x * cellSize,
             top: robotState.position.y * cellSize,

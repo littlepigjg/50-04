@@ -85,6 +85,33 @@ export interface Program {
 
 export type ExecutionStatus = 'idle' | 'running' | 'paused' | 'success' | 'failed';
 
+export interface PathPoint {
+  position: Position;
+  direction: Direction;
+  step: number;
+}
+
+export interface LoopState {
+  blockId: string;
+  currentIteration: number;
+  totalIterations: number;
+}
+
+export interface ConditionResult {
+  blockId: string;
+  type: BlockType;
+  result: boolean;
+  description: string;
+}
+
+export interface DebugInfo {
+  pathHistory: PathPoint[];
+  loopStates: LoopState[];
+  conditionResults: ConditionResult[];
+  executionLog: string[];
+  callStack: string[];
+}
+
 export interface ExecutionState {
   status: ExecutionStatus;
   robot: RobotState;
@@ -93,6 +120,7 @@ export interface ExecutionState {
   totalSteps: number;
   error?: string;
   highlightedBlockId?: string;
+  debugInfo?: DebugInfo;
 }
 
 export interface LevelProgress {

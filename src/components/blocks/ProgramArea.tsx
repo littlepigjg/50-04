@@ -248,7 +248,7 @@ export const ProgramArea: React.FC<ProgramAreaProps> = ({
                   <DraggableBlock
                     key={block.id}
                     block={block}
-                    isHighlighted={highlightedBlockId === block.id}
+                    highlightedBlockId={highlightedBlockId}
                     onDelete={handleDelete}
                     onUpdate={handleUpdate}
                     allBlocks={blocks}
