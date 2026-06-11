@@ -5,7 +5,8 @@ import {
   PathMarker,
   PathVisualization,
   buildPathVisualizationData,
-} from './PathVisualization';
+  buildMarkerMap,
+} from './path';
 
 interface GameGridProps {
   level: Level;
@@ -173,11 +174,10 @@ export const GameGrid: React.FC<GameGridProps> = ({
     [pathHistory]
   );
 
-  const markerMap = useMemo(() => {
-    const map = new Map<string, typeof pathViz.markers[number]>();
-    pathViz.markers.forEach((m) => map.set(`${m.x},${m.y}`, m));
-    return map;
-  }, [pathViz]);
+  const markerMap = useMemo(
+    () => buildMarkerMap(pathViz),
+    [pathViz]
+  );
 
   return (
     <div
@@ -224,9 +224,10 @@ export const GameGrid: React.FC<GameGridProps> = ({
               <PathMarker
                 displayStep={markerMap.get(`${x},${y}`)!.displayStep}
                 colorIndex={markerMap.get(`${x},${y}`)!.colorIndex}
-                totalCount={markerMap.get(`${x},${y}`)!.totalCount}
-                isFirst={markerMap.get(`${x},${y}`)!.isFirst}
-                isLast={markerMap.get(`${x},${y}`)!.isLast}
+                totalColors={pathViz.totalColors}
+                isStart={markerMap.get(`${x},${y}`)!.isStart}
+                isLatest={markerMap.get(`${x},${y}`)!.isLatest}
+                visitCount={markerMap.get(`${x},${y}`)!.visitCount}
               />
             )}
           </div>
@@ -236,6 +237,7 @@ export const GameGrid: React.FC<GameGridProps> = ({
           pathHistory={pathHistory}
           cellSize={cellSize}
           showPath={showPath}
+          renderMarkers={false}
         />
 
         <div
